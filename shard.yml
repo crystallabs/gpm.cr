@@ -1,0 +1,9 @@
+name: gpm
+version: 0.1.0
+
+authors:
+  - Davor Ocelic <docelic@crystallabs.io>
+
+crystal: 1.1.1
+
+license: MIT
