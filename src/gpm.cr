@@ -109,7 +109,7 @@ class GPM
     dy : Int16,            # displacement y for this event, and absolute x,y
     x : Int16,             # absolute x
     y : Int16,             # absolute y
-    type : Types,
+    types : Types,
     clicks : Int32, # number of clicks, e.g. double click are determined by time-based processing
     margin : Margins,
     # wdx/y: displacement of wheels in this event. Absolute values are not
