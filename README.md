@@ -6,7 +6,7 @@
 
 Crystal-native client for GPM (console mouse).
 
-NOTE: This library will only work when a program is running in the console; it won't work under X.
+NOTE: This library will only work when a program is running in the console and GPM server is running. It won't work under X.
 
 ## Installation
 
@@ -16,6 +16,7 @@ NOTE: This library will only work when a program is running in the console; it w
    dependencies:
      gpm:
        github: crystallabs/gpm.cr
+       version: ~> 1.0
    ```
 
 2. Run `shards install`
