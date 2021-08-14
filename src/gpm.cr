@@ -1,7 +1,7 @@
 require "socket"
 
 class GPM
-  VERSION = "1.0.0"
+  VERSION = "1.0.1"
 
   USE_MAGIC = false
   MAGIC     = 0x47706D4Cu32
