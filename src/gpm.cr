@@ -1,7 +1,7 @@
 require "socket"
 
 class GPM
-  VERSION = "1.0.2"
+  VERSION = "1.0.3"
 
   USE_MAGIC = false
   MAGIC     = 0x47706D4Cu32
@@ -21,10 +21,9 @@ class GPM
 
   @[Flags]
   enum Modifiers
-    SHIFT = 1
-    CTRL  = 4
-    ALT   = 8
-    META  = 8
+    SHIFT   = 1
+    CONTROL = 4
+    META    = 8
   end
 
   enum Request
