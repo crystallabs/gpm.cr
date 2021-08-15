@@ -8,6 +8,27 @@ Crystal-native client for GPM (console mouse).
 
 NOTE: This library will only work when a program is running in the console and GPM server is running. It won't work under X.
 
+GPM is a simple protocol where we connect to the gpm's unix socket and listen for events. Each event gives us the following
+information:
+
+```
+buttons : Buttons (right, middle, left, fourth, up, down)
+modifiers : Keyboard modifiers (shift, control, meta)
+dx : Delta (change) of x
+dy : Delta (change) of y
+x : Absolute x
+y : Absolute y
+types : Types of event (move, drag, down, up, single, double, triple, motion)
+clicks : Number of clicks counted
+margins : Which screen margins were touched (top, bottom, left, right)
+wdx : Delta (change) of mouse wheel, horizontal
+wdy : Delta (change) of mouse wheel, vertical
+```
+
+We can also request information from GPM. This is done by writing the config structure into the socket, in which the PID
+of the process field is set to 0 and the vc (virtual console) number is set to the number/ID of request.
+There are 4 requests available in enum `Request`: snapshot, buttons, config, nopaste.
+
 ## Installation
 
 1. Add the dependency to your `shard.yml`:

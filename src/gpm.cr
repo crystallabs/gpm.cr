@@ -110,7 +110,7 @@ class GPM
     y : Int16,             # absolute y
     types : Types,
     clicks : Int32, # number of clicks, e.g. double click are determined by time-based processing
-    margin : Margins,
+    margins : Margins,
     # wdx/y: displacement of wheels in this event. Absolute values are not
     # required, because wheel movement is typically used for scrolling
     # or selecting fields, not for cursor positioning. The application
