@@ -6,7 +6,9 @@
 
 Crystal-native client for GPM (console mouse).
 
-NOTE: This library will only work when a program is running in the console and GPM server is running. It won't work under X.
+NOTE: This library will only work when a program is running in the console and GPM server is running. One needs to be on a
+TTY and executing the command `tty` should report something like `tty<NUMBER>`. This won't work under X and pseudoterminals
+(ptys, pts's).
 
 GPM is a simple protocol where we connect to the gpm's unix socket and listen for events. Each event gives us the following
 information:
