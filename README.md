@@ -58,13 +58,13 @@ Example output:
 ```
 $ crystal examples/gpm.cr
 
-GPM::Event(@buttons=None, @modifiers=None, @vc=6, @dx=0, @dy=0, @x=163, @y=35, @type=MOVE, @clicks=0, @margin=None, @wdx=0, @wdy=0)
-GPM::Event(@buttons=LEFT, @modifiers=None, @vc=6, @dx=0, @dy=0, @x=163, @y=35, @type=DOWN | SINGLE, @clicks=0, @margin=None, @wdx=0, @wdy=0)
-GPM::Event(@buttons=LEFT, @modifiers=None, @vc=6, @dx=0, @dy=0, @x=163, @y=35, @type=UP | SINGLE, @clicks=0, @margin=None, @wdx=0, @wdy=0)
-GPM::Event(@buttons=RIGHT, @modifiers=None, @vc=6, @dx=0, @dy=0, @x=163, @y=35, @type=DOWN | SINGLE, @clicks=0, @margin=None, @wdx=0, @wdy=0)
-GPM::Event(@buttons=RIGHT, @modifiers=CTRL, @vc=6, @dx=0, @dy=0, @x=163, @y=35, @type=DRAG | SINGLE | MOTION, @clicks=0, @margin=None, @wdx=0, @wdy=0)
-GPM::Event(@buttons=RIGHT, @modifiers=CTRL, @vc=6, @dx=1, @dy=0, @x=164, @y=35, @type=DRAG | SINGLE | MOTION, @clicks=0, @margin=None, @wdx=0, @wdy=0)
-GPM::Event(@buttons=RIGHT, @modifiers=CTRL, @vc=6, @dx=0, @dy=0, @x=164, @y=35, @type=UP | SINGLE | MOTION, @clicks=0, @margin=None, @wdx=0, @wdy=0)
+GPM::Event(@buttons=None, @modifiers=None, @vc=6, @dx=0, @dy=0, @x=163, @y=35, @type=MOVE, @clicks=0, @margins=None, @wdx=0, @wdy=0)
+GPM::Event(@buttons=LEFT, @modifiers=None, @vc=6, @dx=0, @dy=0, @x=163, @y=35, @type=DOWN | SINGLE, @clicks=0, @margins=None, @wdx=0, @wdy=0)
+GPM::Event(@buttons=LEFT, @modifiers=None, @vc=6, @dx=0, @dy=0, @x=163, @y=35, @type=UP | SINGLE, @clicks=0, @margins=None, @wdx=0, @wdy=0)
+GPM::Event(@buttons=RIGHT, @modifiers=None, @vc=6, @dx=0, @dy=0, @x=163, @y=35, @type=DOWN | SINGLE, @clicks=0, @margins=None, @wdx=0, @wdy=0)
+GPM::Event(@buttons=RIGHT, @modifiers=CTRL, @vc=6, @dx=0, @dy=0, @x=163, @y=35, @type=DRAG | SINGLE | MOTION, @clicks=0, @margins=None, @wdx=0, @wdy=0)
+GPM::Event(@buttons=RIGHT, @modifiers=CTRL, @vc=6, @dx=1, @dy=0, @x=164, @y=35, @type=DRAG | SINGLE | MOTION, @clicks=0, @margins=None, @wdx=0, @wdy=0)
+GPM::Event(@buttons=RIGHT, @modifiers=CTRL, @vc=6, @dx=0, @dy=0, @x=164, @y=35, @type=UP | SINGLE | MOTION, @clicks=0, @margins=None, @wdx=0, @wdy=0)
 ```
 
 ## Thanks
