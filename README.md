@@ -8,7 +8,7 @@ Crystal-native client for GPM (console mouse).
 
 NOTE: This library will only work when a program is running in the console and GPM server is running. One needs to be on a
 TTY and executing the command `tty` should report something like `tty<NUMBER>`. It won't work under X and pseudoterminals
-(ptys, pts's) where running `tty` will report something like `/dev/pts/<NUMBER>`.
+(ptys, pts's) where running `tty` reports something like `/dev/pts/<NUMBER>`.
 
 GPM is a simple protocol where we connect to the gpm's unix socket and listen for events. Each event gives us the following
 information:
@@ -27,8 +27,8 @@ wdx : Delta (change) of mouse wheel, horizontal
 wdy : Delta (change) of mouse wheel, vertical
 ```
 
-We can also request information from GPM. This is done by writing the config structure into the socket, in which the PID
-of the process field is set to 0 and the vc (virtual console) number is set to the number/ID of request.
+We can also request information from GPM. This is done by writing the config structure into the socket, in which the
+process PID field is set to 0 and the vc (virtual console) number field is set to the number/ID of request.
 There are 4 requests available in enum `Request`: snapshot, buttons, config, nopaste.
 
 ## Installation
