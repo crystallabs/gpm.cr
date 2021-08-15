@@ -68,7 +68,7 @@ class GPM
     end
 
     def any_single?
-     single?
+      single?
     end
 
     def strict_double?
