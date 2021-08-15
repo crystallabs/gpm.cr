@@ -1,7 +1,7 @@
 require "socket"
 
 class GPM
-  VERSION = "1.0.1"
+  VERSION = "1.0.2"
 
   USE_MAGIC = false
   MAGIC     = 0x47706D4Cu32
@@ -59,36 +59,36 @@ class GPM
     ENTER =  512 # enter event, user in Roi's */
     LEAVE = 1024 # leave event, used in Roi's */
 
-    def bare_events?
-      ((self) & (0x0f | ENTER | LEAVE)) > 0
+    def bare_events
+      self & (0x0f | ENTER | LEAVE)
     end
 
     def strict_single?
-      (((self) & SINGLE) && !((self) & MOTION)) > 0
+      single? && !motion?
     end
 
     def any_single?
-      ((self) & SINGLE) > 0
+     single?
     end
 
     def strict_double?
-      (((self) & DOUBLE) && !((self) & MOTION)) > 0
+      double? and !motion?
     end
 
     def any_double?
-      ((self) & DOUBLE) > 0
+      double?
     end
 
     def strict_triple?
-      (((self) & TRIPLE) && !((self) & MOTION)) > 0
+      triple? && !motion?
     end
 
     def any_triple?
-      ((self) & TRIPLE) > 0
+      triple?
     end
 
     def to_io(io, format)
-      io.write_bytes self.value, format
+      io.write_bytes value, format
     end
   end
 
