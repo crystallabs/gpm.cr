@@ -7,7 +7,9 @@ class GPM
   MAGIC     = 0x47706D4Cu32
   SOCKET    = "/dev/gpmctl"
 
-  LE = IO::ByteFormat::LittleEndian
+  # GPM writes its raw C structs onto the socket, so all multi-byte fields
+  # are in the host's native byte order (little-endian on x86/most ARM).
+  ENDIAN = IO::ByteFormat::SystemEndian
 
   @[Flags]
   enum Buttons
@@ -59,7 +61,7 @@ class GPM
     LEAVE = 1024 # leave event, used in Roi's */
 
     def bare_events
-      self & (0x0f | ENTER | LEAVE)
+      self & (Types.new(0x0f) | ENTER | LEAVE)
     end
 
     def strict_single?
@@ -71,7 +73,7 @@ class GPM
     end
 
     def strict_double?
-      double? and !motion?
+      double? && !motion?
     end
 
     def any_double?
@@ -92,7 +94,7 @@ class GPM
   end
 
   record Config,
-    event_mask : Types = Types::All, # 65535
+    event_mask : Types = Types::All, # 2047 (all defined Types bits)
     default_mask : Types = (Types::MOVE | Types::HARD),
     min_mod : UInt16 = 0,
     max_mod : UInt16 = 0xffff,
@@ -139,38 +141,41 @@ class GPM
   end
 
   def send_config(config = @config, socket = @socket)
-    # buffer = IO::Memory.new @use_magic ? 20 : 16
-    buffer = socket
+    # Assemble the whole Gpm_Connect struct in memory and write it in one
+    # call, so the request reaches GPM as a single contiguous send.
+    buffer = IO::Memory.new @use_magic ? 20 : 16
 
-    if @use_magic
-      buffer.write_bytes @magic, LE
-    end
+    buffer.write_bytes @magic, ENDIAN if @use_magic
 
-    buffer.write_bytes config.event_mask.value.to_u16, LE   # 4 ;
-    buffer.write_bytes config.default_mask.value.to_u16, LE # 6 ;
-    buffer.write_bytes config.min_mod, LE                   # 8 ;
-    buffer.write_bytes config.max_mod, LE                   # 10 ;
-    buffer.write_bytes config.pid, LE                       # 12 ;
-    buffer.write_bytes config.vc, LE                        # 16 ;
+    buffer.write_bytes config.event_mask.value.to_u16, ENDIAN   # 4 ;
+    buffer.write_bytes config.default_mask.value.to_u16, ENDIAN # 6 ;
+    buffer.write_bytes config.min_mod, ENDIAN                   # 8 ;
+    buffer.write_bytes config.max_mod, ENDIAN                   # 10 ;
+    buffer.write_bytes config.pid, ENDIAN                       # 12 ;
+    buffer.write_bytes config.vc, ENDIAN                        # 16 ;
 
-    # socket.write buffer.to_slice
+    socket.write buffer.to_slice
   end
 
+  # Reads one event from the socket. Returns `nil` once the connection is
+  # closed (e.g. GPM exits), so callers can use `while e = gpm.get_event`.
   def get_event(raw = @socket)
     Event.new(
-      Buttons.from_value(raw.read_bytes(UInt8, LE)),   # raw[0]
-      Modifiers.from_value(raw.read_bytes(UInt8, LE)), # raw[1]
-      raw.read_bytes(UInt16, LE),                      # vc
-      raw.read_bytes(Int16, LE),                       # dx
-      raw.read_bytes(Int16, LE),                       # dy
-      raw.read_bytes(Int16, LE),                       # x
-      raw.read_bytes(Int16, LE),                       # y
-      Types.from_value(raw.read_bytes(Int32, LE)),
-      raw.read_bytes(Int32, LE), # nr. of clicks
-      Margins.from_value(raw.read_bytes(Int32, LE)),
-      raw.read_bytes(Int16, LE), # wdx
-      raw.read_bytes(Int16, LE), # wdy
+      Buttons.new(raw.read_bytes(UInt8, ENDIAN)),   # raw[0]
+      Modifiers.new(raw.read_bytes(UInt8, ENDIAN)), # raw[1]
+      raw.read_bytes(UInt16, ENDIAN),               # vc
+      raw.read_bytes(Int16, ENDIAN),                # dx
+      raw.read_bytes(Int16, ENDIAN),                # dy
+      raw.read_bytes(Int16, ENDIAN),                # x
+      raw.read_bytes(Int16, ENDIAN),                # y
+      Types.new(raw.read_bytes(Int32, ENDIAN)),
+      raw.read_bytes(Int32, ENDIAN), # nr. of clicks
+      Margins.new(raw.read_bytes(Int32, ENDIAN)),
+      raw.read_bytes(Int16, ENDIAN), # wdx
+      raw.read_bytes(Int16, ENDIAN), # wdy
     )
+  rescue IO::EOFError
+    nil
   end
 
   def stop
