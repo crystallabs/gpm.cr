@@ -24,6 +24,7 @@ class GPM
   @[Flags]
   enum Modifiers
     SHIFT   = 1
+    ALTGR   = 2
     CONTROL = 4
     META    = 8
   end
