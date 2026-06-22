@@ -120,7 +120,64 @@ class GPM
     # can determine when the end of file or form is reached, and not
     # go any further. A single mouse will use wdy, "vertical scroll" wheel.
     wdx : Int16,
-    wdy : Int16
+    wdy : Int16 do
+    # Standard, uniform accessors for the common mouse-event queries, so
+    # consumers can read an `Event` the same way regardless of source instead
+    # of unpacking the raw `Buttons`/`Modifiers`/`Types` flag words.
+
+    # Modifier keys held during the event.
+    def shift? : Bool
+      modifiers.shift?
+    end
+
+    def ctrl? : Bool
+      modifiers.control?
+    end
+
+    def meta? : Bool
+      modifiers.meta?
+    end
+
+    # Which physical button the event pertains to.
+    def left? : Bool
+      buttons.left?
+    end
+
+    def middle? : Bool
+      buttons.middle?
+    end
+
+    def right? : Bool
+      buttons.right?
+    end
+
+    # Scroll-wheel motion (GPM reports it through the `UP`/`DOWN` button bits).
+    def wheel_up? : Bool
+      buttons.up?
+    end
+
+    def wheel_down? : Bool
+      buttons.down?
+    end
+
+    def wheel? : Bool
+      wheel_up? || wheel_down?
+    end
+
+    # Action classification, derived from the `Types` flags.
+    def pressed? : Bool
+      types.down?
+    end
+
+    def released? : Bool
+      types.up?
+    end
+
+    # Pointer motion (a bare move, or a drag with a button held).
+    def moved? : Bool
+      types.move? || types.drag?
+    end
+  end
 
   property file : String
   property socket : UNIXSocket
