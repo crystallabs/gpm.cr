@@ -217,20 +217,28 @@ class GPM
 
   # Reads one event from the socket. Returns `nil` once the connection is
   # closed (e.g. GPM exits), so callers can use `while e = gpm.get_event`.
+  #
+  # The whole 28-byte Gpm_Event struct is pulled in with a single `read_fully`
+  # and the fields are then decoded from that stack buffer, rather than issuing
+  # a separate buffered read per field on this hot path.
   def get_event(raw = @socket)
+    buf = uninitialized UInt8[28]
+    bytes = buf.to_slice
+    raw.read_fully(bytes)
+
     Event.new(
-      Buttons.new(raw.read_bytes(UInt8, ENDIAN)),   # raw[0]
-      Modifiers.new(raw.read_bytes(UInt8, ENDIAN)), # raw[1]
-      raw.read_bytes(UInt16, ENDIAN),               # vc
-      raw.read_bytes(Int16, ENDIAN),                # dx
-      raw.read_bytes(Int16, ENDIAN),                # dy
-      raw.read_bytes(Int16, ENDIAN),                # x
-      raw.read_bytes(Int16, ENDIAN),                # y
-      Types.new(raw.read_bytes(Int32, ENDIAN)),
-      raw.read_bytes(Int32, ENDIAN), # nr. of clicks
-      Margins.new(raw.read_bytes(Int32, ENDIAN)),
-      raw.read_bytes(Int16, ENDIAN), # wdx
-      raw.read_bytes(Int16, ENDIAN), # wdy
+      Buttons.new(bytes.unsafe_fetch(0)),       # raw[0]
+      Modifiers.new(bytes.unsafe_fetch(1)),     # raw[1]
+      ENDIAN.decode(UInt16, bytes[2, 2]),       # vc
+      ENDIAN.decode(Int16, bytes[4, 2]),        # dx
+      ENDIAN.decode(Int16, bytes[6, 2]),        # dy
+      ENDIAN.decode(Int16, bytes[8, 2]),        # x
+      ENDIAN.decode(Int16, bytes[10, 2]),       # y
+      Types.new(ENDIAN.decode(Int32, bytes[12, 4])),
+      ENDIAN.decode(Int32, bytes[16, 4]),       # nr. of clicks
+      Margins.new(ENDIAN.decode(Int32, bytes[20, 4])),
+      ENDIAN.decode(Int16, bytes[24, 2]),       # wdx
+      ENDIAN.decode(Int16, bytes[26, 2]),       # wdy
     )
   rescue IO::EOFError
     nil
