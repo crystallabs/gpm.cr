@@ -1,0 +1,12 @@
+# Ameba configuration for gpm.cr
+# Run with: ./bin/ameba
+
+Documentation/DocumentationAdmonition:
+  # The `# TODO:` note about /dev/input vc detection is a real, intentional
+  # reminder that we want to keep in the source, not a lint failure.
+  Enabled: false
+
+Lint/DebugCalls:
+  # `p e` in examples/gpm.cr is the point of the example: print each event.
+  Excluded:
+    - examples/**

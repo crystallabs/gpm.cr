@@ -181,7 +181,7 @@ class GPM
 
   property file : String
   property socket : UNIXSocket
-  property use_magic : Bool
+  property? use_magic : Bool
   property config : Config
   property magic : UInt32
 
@@ -227,18 +227,18 @@ class GPM
     raw.read_fully(bytes)
 
     Event.new(
-      Buttons.new(bytes.unsafe_fetch(0)),       # raw[0]
-      Modifiers.new(bytes.unsafe_fetch(1)),     # raw[1]
-      ENDIAN.decode(UInt16, bytes[2, 2]),       # vc
-      ENDIAN.decode(Int16, bytes[4, 2]),        # dx
-      ENDIAN.decode(Int16, bytes[6, 2]),        # dy
-      ENDIAN.decode(Int16, bytes[8, 2]),        # x
-      ENDIAN.decode(Int16, bytes[10, 2]),       # y
+      Buttons.new(bytes.unsafe_fetch(0)),   # raw[0]
+      Modifiers.new(bytes.unsafe_fetch(1)), # raw[1]
+      ENDIAN.decode(UInt16, bytes[2, 2]),   # vc
+      ENDIAN.decode(Int16, bytes[4, 2]),    # dx
+      ENDIAN.decode(Int16, bytes[6, 2]),    # dy
+      ENDIAN.decode(Int16, bytes[8, 2]),    # x
+      ENDIAN.decode(Int16, bytes[10, 2]),   # y
       Types.new(ENDIAN.decode(Int32, bytes[12, 4])),
-      ENDIAN.decode(Int32, bytes[16, 4]),       # nr. of clicks
+      ENDIAN.decode(Int32, bytes[16, 4]), # nr. of clicks
       Margins.new(ENDIAN.decode(Int32, bytes[20, 4])),
-      ENDIAN.decode(Int16, bytes[24, 2]),       # wdx
-      ENDIAN.decode(Int16, bytes[26, 2]),       # wdy
+      ENDIAN.decode(Int16, bytes[24, 2]), # wdx
+      ENDIAN.decode(Int16, bytes[26, 2]), # wdy
     )
   rescue IO::EOFError
     nil
