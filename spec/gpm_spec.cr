@@ -49,6 +49,26 @@ describe GPM do
     end
   end
 
+  describe "#get_event" do
+    # Daemon-free: a throwaway UNIXServer lets the constructor's handshake
+    # write succeed. After `stop` closes our socket, `get_event` must honour
+    # its documented "returns nil once the connection is closed" contract and
+    # return nil rather than raising IO::Error, so callers' shutdown of a
+    # `while e = gpm.get_event` loop ends cleanly instead of crashing.
+    it "returns nil after the connection is stopped instead of raising" do
+      path = File.tempname("gpm-spec", ".sock")
+      server = UNIXServer.new(path)
+      begin
+        gpm = GPM.new(file: path)
+        gpm.stop
+        gpm.get_event.should be_nil
+      ensure
+        server.close
+        File.delete(path) if File.exists?(path)
+      end
+    end
+  end
+
   describe GPM::Config do
     # Constructing a Config must not raise when stdin isn't backed by a /proc
     # tty entry (redirected stdin, non-Linux, etc.): the `vc` default has to fall

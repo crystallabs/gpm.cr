@@ -259,6 +259,15 @@ class GPM
       ENDIAN.decode(Int16, bytes[26, 2]), # wdy
     )
   rescue IO::EOFError
+    # GPM exited / closed its end: a clean stream end, signalled as nil.
+    nil
+  rescue ex : IO::Error
+    # Our own socket was closed (typically via `stop`, possibly from another
+    # fiber while this read was blocked). That is still "the connection is
+    # closed", so honour the documented contract and return nil instead of
+    # letting a `while e = gpm.get_event` loop crash on shutdown. Any other
+    # I/O error is a genuine failure and must still propagate.
+    raise ex unless raw.closed?
     nil
   end
 
