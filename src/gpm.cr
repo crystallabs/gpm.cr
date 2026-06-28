@@ -195,7 +195,18 @@ class GPM
   def initialize(@file = SOCKET, @use_magic = USE_MAGIC, @magic = MAGIC)
     @config = Config.new
     @socket = UNIXSocket.new @file
-    send_config
+
+    # If the initial handshake fails (GPM rejects us, broken pipe, etc.) the
+    # exception propagates out of the constructor before the half-open object
+    # is ever handed back, so nothing would close the socket we just opened.
+    # Close it explicitly on the error path rather than leaving the descriptor
+    # dangling until the GC finalizer eventually runs.
+    begin
+      send_config
+    rescue ex
+      @socket.close
+      raise ex
+    end
 
     # In addition to receiving events from GPM, it is also possible to issue requests
     # to GPM. This is done by writing the config structure into the socket, but

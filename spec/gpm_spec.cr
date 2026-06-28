@@ -13,9 +13,40 @@ private def event(buttons : GPM::Buttons, types : GPM::Types, modifiers : GPM::M
   )
 end
 
+# Subclass that lets a spec force the in-constructor handshake to fail while
+# recording the socket the constructor opened, so we can assert it was closed.
+private class FailingGPM < GPM
+  class_property captured : UNIXSocket? = nil
+
+  def send_config(config = @config, socket = @socket)
+    FailingGPM.captured = @socket
+    raise "forced handshake failure"
+  end
+end
+
 describe GPM do
   it "works" do
     true.should eq(true)
+  end
+
+  describe "#initialize" do
+    # Daemon-free: a throwaway UNIXServer makes the connect succeed, then the
+    # handshake is forced to raise. The just-opened socket must be closed (not
+    # leaked) before the exception escapes the constructor.
+    it "closes the opened socket if the initial handshake fails" do
+      path = File.tempname("gpm-spec", ".sock")
+      server = UNIXServer.new(path)
+      begin
+        FailingGPM.captured = nil
+        expect_raises(Exception, "forced handshake failure") do
+          FailingGPM.new(file: path)
+        end
+        FailingGPM.captured.not_nil!.closed?.should be_true
+      ensure
+        server.close
+        File.delete(path) if File.exists?(path)
+      end
+    end
   end
 
   describe GPM::Config do
