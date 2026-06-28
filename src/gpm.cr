@@ -88,10 +88,6 @@ class GPM
     def any_triple?
       triple?
     end
-
-    def to_io(io, format)
-      io.write_bytes value, format
-    end
   end
 
   record Config,
@@ -211,9 +207,6 @@ class GPM
     # In addition to receiving events from GPM, it is also possible to issue requests
     # to GPM. This is done by writing the config structure into the socket, but
     # with pid=0 and vc=REQUEST_ID. The result is returned as an event as usual.
-    #
-    # @config = @config.copy_with pid: 0i32, vc: Request::NOPASTE
-    # send_config
   end
 
   def send_config(config = @config, socket = @socket)
@@ -223,12 +216,15 @@ class GPM
 
     buffer.write_bytes @magic, ENDIAN if @use_magic
 
-    buffer.write_bytes config.event_mask.value.to_u16, ENDIAN   # 4 ;
-    buffer.write_bytes config.default_mask.value.to_u16, ENDIAN # 6 ;
-    buffer.write_bytes config.min_mod, ENDIAN                   # 8 ;
-    buffer.write_bytes config.max_mod, ENDIAN                   # 10 ;
-    buffer.write_bytes config.pid, ENDIAN                       # 12 ;
-    buffer.write_bytes config.vc, ENDIAN                        # 16 ;
+    # Trailing numbers are each field's cumulative byte END-offset in the
+    # default (no-magic) layout. A leading 4-byte magic prefix (USE_MAGIC)
+    # shifts every one of them by +4.
+    buffer.write_bytes config.event_mask.value.to_u16, ENDIAN   # u16 -> ends @ 2
+    buffer.write_bytes config.default_mask.value.to_u16, ENDIAN # u16 -> ends @ 4
+    buffer.write_bytes config.min_mod, ENDIAN                   # u16 -> ends @ 6
+    buffer.write_bytes config.max_mod, ENDIAN                   # u16 -> ends @ 8
+    buffer.write_bytes config.pid, ENDIAN                       # i32 -> ends @ 12
+    buffer.write_bytes config.vc, ENDIAN                        # i32 -> ends @ 16
 
     socket.write buffer.to_slice
   end
@@ -272,6 +268,7 @@ class GPM
   end
 
   def stop
-    @socket.close unless @socket.closed?
+    # UNIXSocket#close is idempotent, so calling stop twice is harmless.
+    @socket.close
   end
 end

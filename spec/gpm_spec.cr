@@ -69,6 +69,25 @@ describe GPM do
     end
   end
 
+  describe "#stop" do
+    # Daemon-free: stop must stay idempotent now that the redundant
+    # `unless @socket.closed?` guard is gone (UNIXSocket#close is idempotent),
+    # so calling it twice must not raise.
+    it "is idempotent" do
+      path = File.tempname("gpm-spec", ".sock")
+      server = UNIXServer.new(path)
+      begin
+        gpm = GPM.new(file: path)
+        gpm.stop
+        gpm.stop
+        gpm.socket.closed?.should be_true
+      ensure
+        server.close
+        File.delete(path) if File.exists?(path)
+      end
+    end
+  end
+
   describe GPM::Config do
     # Constructing a Config must not raise when stdin isn't backed by a /proc
     # tty entry (redirected stdin, non-Linux, etc.): the `vc` default has to fall
