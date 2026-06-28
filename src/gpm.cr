@@ -258,13 +258,13 @@ class GPM
     raw.read_fully(Slice.new(ptr, 28))
 
     Event.new(
-      Buttons.new(ptr[0]),               # raw[0]
-      Modifiers.new(ptr[1]),             # raw[1]
-      read_field(ptr, 2, UInt16),        # vc
-      read_field(ptr, 4, Int16),         # dx
-      read_field(ptr, 6, Int16),         # dy
-      read_field(ptr, 8, Int16),         # x
-      read_field(ptr, 10, Int16),        # y
+      Buttons.new(ptr[0]),        # raw[0]
+      Modifiers.new(ptr[1]),      # raw[1]
+      read_field(ptr, 2, UInt16), # vc
+      read_field(ptr, 4, Int16),  # dx
+      read_field(ptr, 6, Int16),  # dy
+      read_field(ptr, 8, Int16),  # x
+      read_field(ptr, 10, Int16), # y
       Types.new(read_field(ptr, 12, Int32)),
       read_field(ptr, 16, Int32), # nr. of clicks
       Margins.new(read_field(ptr, 20, Int32)),
