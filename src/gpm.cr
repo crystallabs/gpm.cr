@@ -236,23 +236,30 @@ class GPM
   # and the fields are then decoded from that stack buffer, rather than issuing
   # a separate buffered read per field on this hot path.
   def get_event(raw = @socket)
-    buf = uninitialized UInt8[28]
-    bytes = buf.to_slice
-    raw.read_fully(bytes)
+    # 28-byte buffer typed as Int32[7] purely to force 4-byte alignment: GPM's
+    # Gpm_Event C struct lays its fields out naturally aligned from offset 0, so
+    # with a 4-aligned base every multi-byte field below is aligned too. ENDIAN
+    # is SystemEndian (host-native, which is exactly how GPM writes the struct),
+    # so reading each field straight through its typed pointer is identical to
+    # `ENDIAN.decode` on every platform (LE or BE) while skipping the per-field
+    # bounds-checked sub-slicing that `bytes[off, n]` would do on this hot path.
+    storage = uninitialized Int32[7]
+    ptr = storage.to_unsafe.as(UInt8*)
+    raw.read_fully(Slice.new(ptr, 28))
 
     Event.new(
-      Buttons.new(bytes.unsafe_fetch(0)),   # raw[0]
-      Modifiers.new(bytes.unsafe_fetch(1)), # raw[1]
-      ENDIAN.decode(UInt16, bytes[2, 2]),   # vc
-      ENDIAN.decode(Int16, bytes[4, 2]),    # dx
-      ENDIAN.decode(Int16, bytes[6, 2]),    # dy
-      ENDIAN.decode(Int16, bytes[8, 2]),    # x
-      ENDIAN.decode(Int16, bytes[10, 2]),   # y
-      Types.new(ENDIAN.decode(Int32, bytes[12, 4])),
-      ENDIAN.decode(Int32, bytes[16, 4]), # nr. of clicks
-      Margins.new(ENDIAN.decode(Int32, bytes[20, 4])),
-      ENDIAN.decode(Int16, bytes[24, 2]), # wdx
-      ENDIAN.decode(Int16, bytes[26, 2]), # wdy
+      Buttons.new(ptr[0]),                  # raw[0]
+      Modifiers.new(ptr[1]),                # raw[1]
+      (ptr + 2).as(UInt16*).value,          # vc
+      (ptr + 4).as(Int16*).value,           # dx
+      (ptr + 6).as(Int16*).value,           # dy
+      (ptr + 8).as(Int16*).value,           # x
+      (ptr + 10).as(Int16*).value,          # y
+      Types.new((ptr + 12).as(Int32*).value),
+      (ptr + 16).as(Int32*).value, # nr. of clicks
+      Margins.new((ptr + 20).as(Int32*).value),
+      (ptr + 24).as(Int16*).value, # wdx
+      (ptr + 26).as(Int16*).value, # wdy
     )
   rescue IO::EOFError
     # GPM exited / closed its end: a clean stream end, signalled as nil.
