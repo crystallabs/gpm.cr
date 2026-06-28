@@ -101,7 +101,14 @@ class GPM
     max_mod : UInt16 = 0xffff,
     pid : Int32 = Process.pid.to_i32,
     # TODO: for vc: should  also check for /dev/input/ (if tty not found? And anyway, how?)
-    vc : Int32 = File.readlink("/proc/#{Process.pid}/fd/0").match(/tty(\d+)/).try(&.[1].to_i) || 0
+    #
+    # The `rescue nil` makes the `|| 0` fallback actually reachable: `File.readlink`
+    # raises (e.g. File::NotFoundError) whenever stdin isn't backed by a `/proc` tty
+    # entry (redirected/piped stdin, running under a service manager, non-Linux),
+    # and the `record` macro evaluates this default eagerly on *every* `Config.new`,
+    # even when `vc:` is passed explicitly. Without the rescue that exception would
+    # abort construction instead of defaulting the virtual console to 0.
+    vc : Int32 = (File.readlink("/proc/#{Process.pid}/fd/0").match(/tty(\d+)/).try(&.[1].to_i) rescue nil) || 0
 
   record Event,
     buttons : Buttons,

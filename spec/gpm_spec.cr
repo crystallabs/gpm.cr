@@ -18,6 +18,20 @@ describe GPM do
     true.should eq(true)
   end
 
+  describe GPM::Config do
+    # Constructing a Config must not raise when stdin isn't backed by a /proc
+    # tty entry (redirected stdin, non-Linux, etc.): the `vc` default has to fall
+    # back to a plain Int32 rather than letting File.readlink's exception abort
+    # construction. (Pre-fix this raised File::NotFoundError.)
+    it "constructs without raising when the controlling tty can't be detected" do
+      GPM::Config.new.vc.should be_a(Int32)
+    end
+
+    it "honors an explicitly provided vc without consulting the tty" do
+      GPM::Config.new(vc: 7).vc.should eq(7)
+    end
+  end
+
   describe "Event uniform accessors" do
     it "classifies a left button press" do
       e = event(GPM::Buttons::LEFT, GPM::Types::DOWN | GPM::Types::SINGLE, GPM::Modifiers::SHIFT)
