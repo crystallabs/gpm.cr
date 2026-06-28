@@ -41,7 +41,7 @@ describe GPM do
         expect_raises(Exception, "forced handshake failure") do
           FailingGPM.new(file: path)
         end
-        FailingGPM.captured.not_nil!.closed?.should be_true
+        FailingGPM.captured.try(&.closed?).should be_true
       ensure
         server.close
         File.delete(path) if File.exists?(path)
