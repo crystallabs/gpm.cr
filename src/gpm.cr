@@ -229,6 +229,16 @@ class GPM
     socket.write buffer.to_slice
   end
 
+  # Read a single naturally-aligned field of `type` out of `ptr` at the given
+  # byte `offset`. This is the per-field decode boilerplate used throughout
+  # `get_event`: GPM writes its `Gpm_Event` C struct host-native and naturally
+  # aligned from offset 0, so a straight typed-pointer read reproduces it on
+  # every platform (LE or BE) while skipping the bounds-checked sub-slicing a
+  # `bytes[off, n]` decode would incur on this hot path.
+  private macro read_field(ptr, offset, type)
+    ({{ptr}} + {{offset}}).as({{type}}*).value
+  end
+
   # Reads one event from the socket. Returns `nil` once the connection is
   # closed (e.g. GPM exits), so callers can use `while e = gpm.get_event`.
   #
@@ -248,18 +258,18 @@ class GPM
     raw.read_fully(Slice.new(ptr, 28))
 
     Event.new(
-      Buttons.new(ptr[0]),                  # raw[0]
-      Modifiers.new(ptr[1]),                # raw[1]
-      (ptr + 2).as(UInt16*).value,          # vc
-      (ptr + 4).as(Int16*).value,           # dx
-      (ptr + 6).as(Int16*).value,           # dy
-      (ptr + 8).as(Int16*).value,           # x
-      (ptr + 10).as(Int16*).value,          # y
-      Types.new((ptr + 12).as(Int32*).value),
-      (ptr + 16).as(Int32*).value, # nr. of clicks
-      Margins.new((ptr + 20).as(Int32*).value),
-      (ptr + 24).as(Int16*).value, # wdx
-      (ptr + 26).as(Int16*).value, # wdy
+      Buttons.new(ptr[0]),               # raw[0]
+      Modifiers.new(ptr[1]),             # raw[1]
+      read_field(ptr, 2, UInt16),        # vc
+      read_field(ptr, 4, Int16),         # dx
+      read_field(ptr, 6, Int16),         # dy
+      read_field(ptr, 8, Int16),         # x
+      read_field(ptr, 10, Int16),        # y
+      Types.new(read_field(ptr, 12, Int32)),
+      read_field(ptr, 16, Int32), # nr. of clicks
+      Margins.new(read_field(ptr, 20, Int32)),
+      read_field(ptr, 24, Int16), # wdx
+      read_field(ptr, 26, Int16), # wdy
     )
   rescue IO::EOFError
     # GPM exited / closed its end: a clean stream end, signalled as nil.
