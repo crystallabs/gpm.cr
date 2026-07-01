@@ -96,14 +96,12 @@ class GPM
     min_mod : UInt16 = 0,
     max_mod : UInt16 = 0xffff,
     pid : Int32 = Process.pid.to_i32,
-    # TODO: for vc: should  also check for /dev/input/ (if tty not found? And anyway, how?)
+    # TODO: for vc: should also check for /dev/input/ (if tty not found? And anyway, how?)
     #
-    # The `rescue nil` makes the `|| 0` fallback actually reachable: `File.readlink`
-    # raises (e.g. File::NotFoundError) whenever stdin isn't backed by a `/proc` tty
-    # entry (redirected/piped stdin, running under a service manager, non-Linux),
-    # and the `record` macro evaluates this default eagerly on *every* `Config.new`,
-    # even when `vc:` is passed explicitly. Without the rescue that exception would
-    # abort construction instead of defaulting the virtual console to 0.
+    # `rescue nil` makes the `|| 0` fallback reachable: `File.readlink` raises
+    # whenever stdin isn't backed by a `/proc` tty entry (redirected/piped stdin,
+    # service manager, non-Linux), and `record` evaluates this default eagerly on
+    # every `Config.new` even when `vc:` is passed explicitly.
     vc : Int32 = (File.readlink("/proc/#{Process.pid}/fd/0").match(/tty(\d+)/).try(&.[1].to_i) rescue nil) || 0
 
   record Event,
@@ -117,16 +115,13 @@ class GPM
     types : Types,
     clicks : Int32, # number of clicks, e.g. double click are determined by time-based processing
     margins : Margins,
-    # wdx/y: displacement of wheels in this event. Absolute values are not
-    # required, because wheel movement is typically used for scrolling
-    # or selecting fields, not for cursor positioning. The application
-    # can determine when the end of file or form is reached, and not
-    # go any further. A single mouse will use wdy, "vertical scroll" wheel.
+    # wdx/y: wheel displacement for this event. No absolute value needed since
+    # wheel movement is used for scrolling, not cursor positioning. A single
+    # mouse uses wdy ("vertical scroll" wheel).
     wdx : Int16,
     wdy : Int16 do
-    # Standard, uniform accessors for the common mouse-event queries, so
-    # consumers can read an `Event` the same way regardless of source instead
-    # of unpacking the raw `Buttons`/`Modifiers`/`Types` flag words.
+    # Uniform accessors for common mouse-event queries, instead of unpacking
+    # the raw `Buttons`/`Modifiers`/`Types` flag words directly.
 
     # Modifier keys held during the event.
     def shift? : Bool
@@ -192,11 +187,9 @@ class GPM
     @config = Config.new
     @socket = UNIXSocket.new @file
 
-    # If the initial handshake fails (GPM rejects us, broken pipe, etc.) the
-    # exception propagates out of the constructor before the half-open object
-    # is ever handed back, so nothing would close the socket we just opened.
-    # Close it explicitly on the error path rather than leaving the descriptor
-    # dangling until the GC finalizer eventually runs.
+    # If the handshake fails, the exception would propagate before the socket
+    # is ever handed back, leaking the descriptor until GC finalizes it. Close
+    # explicitly on the error path instead.
     begin
       send_config
     rescue ex
@@ -204,21 +197,19 @@ class GPM
       raise ex
     end
 
-    # In addition to receiving events from GPM, it is also possible to issue requests
-    # to GPM. This is done by writing the config structure into the socket, but
-    # with pid=0 and vc=REQUEST_ID. The result is returned as an event as usual.
+    # Requests to GPM (not just receiving events) are issued the same way:
+    # write the config struct with pid=0 and vc=REQUEST_ID; result comes back
+    # as an event.
   end
 
   def send_config(config = @config, socket = @socket)
-    # Assemble the whole Gpm_Connect struct in memory and write it in one
-    # call, so the request reaches GPM as a single contiguous send.
+    # Assemble the whole Gpm_Connect struct in memory and write it in one call.
     buffer = IO::Memory.new @use_magic ? 20 : 16
 
     buffer.write_bytes @magic, ENDIAN if @use_magic
 
     # Trailing numbers are each field's cumulative byte END-offset in the
-    # default (no-magic) layout. A leading 4-byte magic prefix (USE_MAGIC)
-    # shifts every one of them by +4.
+    # default (no-magic) layout. A leading 4-byte magic prefix shifts all by +4.
     buffer.write_bytes config.event_mask.value.to_u16, ENDIAN   # u16 -> ends @ 2
     buffer.write_bytes config.default_mask.value.to_u16, ENDIAN # u16 -> ends @ 4
     buffer.write_bytes config.min_mod, ENDIAN                   # u16 -> ends @ 6
@@ -229,12 +220,10 @@ class GPM
     socket.write buffer.to_slice
   end
 
-  # Read a single naturally-aligned field of `type` out of `ptr` at the given
-  # byte `offset`. This is the per-field decode boilerplate used throughout
-  # `get_event`: GPM writes its `Gpm_Event` C struct host-native and naturally
-  # aligned from offset 0, so a straight typed-pointer read reproduces it on
-  # every platform (LE or BE) while skipping the bounds-checked sub-slicing a
-  # `bytes[off, n]` decode would incur on this hot path.
+  # Reads a naturally-aligned field of `type` out of `ptr` at `offset`. GPM
+  # writes its `Gpm_Event` C struct host-native and aligned from offset 0, so
+  # a typed-pointer read reproduces it on any platform while skipping the
+  # bounds-checked sub-slicing a `bytes[off, n]` decode would incur.
   private macro read_field(ptr, offset, type)
     ({{ptr}} + {{offset}}).as({{type}}*).value
   end
@@ -242,17 +231,12 @@ class GPM
   # Reads one event from the socket. Returns `nil` once the connection is
   # closed (e.g. GPM exits), so callers can use `while e = gpm.get_event`.
   #
-  # The whole 28-byte Gpm_Event struct is pulled in with a single `read_fully`
-  # and the fields are then decoded from that stack buffer, rather than issuing
-  # a separate buffered read per field on this hot path.
+  # Pulls the whole 28-byte Gpm_Event struct with one `read_fully` and decodes
+  # fields from that stack buffer, instead of a buffered read per field.
   def get_event(raw = @socket)
-    # 28-byte buffer typed as Int32[7] purely to force 4-byte alignment: GPM's
-    # Gpm_Event C struct lays its fields out naturally aligned from offset 0, so
-    # with a 4-aligned base every multi-byte field below is aligned too. ENDIAN
-    # is SystemEndian (host-native, which is exactly how GPM writes the struct),
-    # so reading each field straight through its typed pointer is identical to
-    # `ENDIAN.decode` on every platform (LE or BE) while skipping the per-field
-    # bounds-checked sub-slicing that `bytes[off, n]` would do on this hot path.
+    # Int32[7] (28 bytes) forces 4-byte alignment so every multi-byte field
+    # below is aligned. ENDIAN is SystemEndian, matching how GPM writes the
+    # struct, so each typed-pointer read is equivalent to `ENDIAN.decode`.
     storage = uninitialized Int32[7]
     ptr = storage.to_unsafe.as(UInt8*)
     raw.read_fully(Slice.new(ptr, 28))
@@ -272,20 +256,18 @@ class GPM
       read_field(ptr, 26, Int16), # wdy
     )
   rescue IO::EOFError
-    # GPM exited / closed its end: a clean stream end, signalled as nil.
+    # GPM exited / closed its end: clean stream end, signalled as nil.
     nil
   rescue ex : IO::Error
-    # Our own socket was closed (typically via `stop`, possibly from another
-    # fiber while this read was blocked). That is still "the connection is
-    # closed", so honour the documented contract and return nil instead of
-    # letting a `while e = gpm.get_event` loop crash on shutdown. Any other
-    # I/O error is a genuine failure and must still propagate.
+    # Our own socket closed (e.g. via `stop` from another fiber while this
+    # read was blocked) counts as "connection closed" too. Other I/O errors
+    # are genuine failures and must still propagate.
     raise ex unless raw.closed?
     nil
   end
 
   def stop
-    # UNIXSocket#close is idempotent, so calling stop twice is harmless.
+    # Idempotent: calling stop twice is harmless.
     @socket.close
   end
 end
