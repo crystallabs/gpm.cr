@@ -1,5 +1,5 @@
 name: gpm
-version: 2.0.0
+version: 2.0.1
 
 authors:
   - Davor Ocelic <docelic@crystallabs.io>
@@ -11,4 +11,4 @@ license: AGPL-3.0
 development_dependencies:
   ameba:
     github: crystal-ameba/ameba
-    version: ~> 1.6
+    branch: master

@@ -225,7 +225,7 @@ class GPM
   # a typed-pointer read reproduces it on any platform while skipping the
   # bounds-checked sub-slicing a `bytes[off, n]` decode would incur.
   private macro read_field(ptr, offset, type)
-    ({{ptr}} + {{offset}}).as({{type}}*).value
+    ({{ ptr }} + {{ offset }}).as({{ type }}*).value
   end
 
   # Reads one event from the socket. Returns `nil` once the connection is

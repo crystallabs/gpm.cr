@@ -26,7 +26,7 @@ end
 
 describe GPM do
   it "works" do
-    true.should eq(true)
+    true.should be_true
   end
 
   describe "#initialize" do
