@@ -29,7 +29,8 @@ wdy : Delta (change) of mouse wheel, vertical
 
 We can also request information from GPM. This is done by writing the config structure into the socket, in which the
 process PID field is set to 0 and the vc (virtual console) number field is set to the number/ID of request.
-There are 4 requests available in enum `Request`: snapshot, buttons, config, nopaste.
+There are 4 requests available in enum `Request`: snapshot, buttons, config, nopaste. `GPM#request` sends one and
+returns the reply event for snapshot and buttons (the other two are not answered).
 
 ## Installation
 
@@ -53,6 +54,14 @@ gpm = GPM.new
 while e = gpm.get_event
   p e
 end
+```
+
+The connection config (event masks, modifier bounds, console) can be passed to the constructor and replaced later;
+assigning `gpm.config = ...` resends it to GPM:
+
+```crystal
+gpm = GPM.new(config: GPM::Config.new(event_mask: GPM::Types::DOWN | GPM::Types::UP))
+snapshot = gpm.request(GPM::Request::SNAPSHOT) # pointer at snapshot.x/y, screen size in snapshot.dx/dy
 ```
 
 Example output:

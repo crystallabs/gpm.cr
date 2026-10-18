@@ -242,6 +242,26 @@ class GPM
     socket.write buffer.to_slice
   end
 
+  # Issues a request to GPM. A request is the config struct written with
+  # `pid` 0 and `vc` set to the request number.
+  #
+  # SNAPSHOT and BUTTONS are answered with an `Event`, which is returned.
+  # For SNAPSHOT, `x`/`y` hold the pointer position, `dx`/`dy` the screen
+  # size, `buttons`/`modifiers`/`clicks` the current state and `vc` the active
+  # console; for both, `types` carries the number of mouse buttons (2 or 3)
+  # rather than event flags. CONFIG and NOPASTE are not answered, so `nil` is
+  # returned without reading from the socket.
+  #
+  # The reply shares the stream with regular events, so an event that was
+  # already queued when the request was sent is returned ahead of the reply.
+  def request(request : Request) : Event?
+    send_config @config.copy_with(pid: 0, vc: request.value)
+    case request
+    in .snapshot?, .buttons? then get_event
+    in .config?, .nopaste?   then nil
+    end
+  end
+
   # Reads a naturally-aligned field of `type` out of `ptr` at `offset`. GPM
   # writes its `Gpm_Event` C struct host-native and aligned from offset 0, so
   # a typed-pointer read reproduces it on any platform while skipping the
