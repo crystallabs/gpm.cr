@@ -197,11 +197,13 @@ class GPM
   property file : String
   property socket : UNIXSocket
   property? use_magic : Bool
-  property config : Config
+  getter config : Config
   property magic : UInt32
 
-  def initialize(@file = SOCKET, @use_magic = USE_MAGIC, @magic = MAGIC)
-    @config = Config.new
+  # Connects to GPM and sends `config` as the connection handshake, so event
+  # masks, modifier bounds and the console can be chosen before the first
+  # event is delivered.
+  def initialize(@file = SOCKET, @use_magic = USE_MAGIC, @magic = MAGIC, @config = Config.new)
     @socket = UNIXSocket.new @file
 
     # If the handshake fails, the exception would propagate before the socket
@@ -213,10 +215,13 @@ class GPM
       @socket.close
       raise ex
     end
+  end
 
-    # Requests to GPM (not just receiving events) are issued the same way:
-    # write the config struct with pid=0 and vc=REQUEST_ID; result comes back
-    # as an event.
+  # Replaces the connection's config and pushes it to GPM: the daemon treats
+  # a `Gpm_Connect` with a non-zero pid written on an open connection as the
+  # new configuration for it.
+  def config=(@config : Config)
+    send_config
   end
 
   def send_config(config = @config, socket = @socket)
