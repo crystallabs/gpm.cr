@@ -256,6 +256,13 @@ class GPM
   # Pulls the whole 28-byte Gpm_Event struct with one `read_fully` and decodes
   # fields from that stack buffer, instead of a buffered read per field.
   def get_event(raw = @socket)
+    # A daemon built with GPM_USE_MAGIC prefixes every event with the magic
+    # word, exactly as it expects one before the connect struct.
+    if @use_magic
+      magic = raw.read_bytes UInt32, ENDIAN
+      raise IO::Error.new "GPM protocol error: expected magic #{@magic.to_s(16)}, got #{magic.to_s(16)}" unless magic == @magic
+    end
+
     # Int32[7] (28 bytes) forces 4-byte alignment so every multi-byte field
     # below is aligned. ENDIAN is SystemEndian, matching how GPM writes the
     # struct, so each typed-pointer read is equivalent to `ENDIAN.decode`.
