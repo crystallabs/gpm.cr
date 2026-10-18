@@ -15,12 +15,12 @@ information:
 
 ```
 buttons : Buttons (right, middle, left, fourth, up, down)
-modifiers : Keyboard modifiers (shift, control, meta)
+modifiers : Keyboard modifiers (shift, altgr, control, meta)
 dx : Delta (change) of x
 dy : Delta (change) of y
 x : Absolute x
 y : Absolute y
-types : Types of event (move, drag, down, up, single, double, triple, motion)
+types : Types of event (move, drag, down, up, single, double, triple, motion, hard, enter, leave)
 clicks : Number of clicks counted
 margins : Which screen margins were touched (top, bottom, left, right)
 wdx : Delta (change) of mouse wheel, horizontal
@@ -39,7 +39,7 @@ There are 4 requests available in enum `Request`: snapshot, buttons, config, nop
    dependencies:
      gpm:
        github: crystallabs/gpm.cr
-       version: ~> 1.0
+       version: ~> 2.0
    ```
 
 2. Run `shards install`
