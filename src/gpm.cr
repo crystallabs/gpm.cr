@@ -47,22 +47,23 @@ class GPM
   @[Flags]
   enum Types
     MOVE = 1
-    DRAG = 2 # exactly one of the bare ones is active at a time */
+    DRAG = 2 # exactly one of the bare ones is active at a time
     DOWN = 4
     UP   = 8
 
-    SINGLE = 16 # at most one in three is set */
+    SINGLE = 16 # at most one in three is set
     DOUBLE = 32
-    TRIPLE = 64 # WARNING: I depend on the values */
+    TRIPLE = 64 # WARNING: I depend on the values
 
-    MOTION = 128 # motion during click? */
-    HARD   = 256 # if set in the defaultMask, force an already used event to pass over to another handler */
+    MOTION = 128 # motion during click?
+    HARD   = 256 # if set in the defaultMask, force an already used event to pass over to another handler
 
-    ENTER =  512 # enter event, user in Roi's */
-    LEAVE = 1024 # leave event, used in Roi's */
+    ENTER =  512 # enter event, user in Roi's
+    LEAVE = 1024 # leave event, used in Roi's
 
+    # The "bare" (non-modifier) event bits: GPM_BARE_EVENTS in gpm.h.
     def bare_events
-      self & (Types.new(0x0f) | ENTER | LEAVE)
+      self & (MOVE | DRAG | DOWN | UP | ENTER | LEAVE)
     end
 
     def strict_single?
@@ -106,12 +107,12 @@ class GPM
 
   record Event,
     buttons : Buttons,
-    modifiers : Modifiers, # try to be a multiple of 4
-    vc : UInt16,           # virtual console
-    dx : Int16,            # displacement x
-    dy : Int16,            # displacement y for this event, and absolute x,y
-    x : Int16,             # absolute x
-    y : Int16,             # absolute y
+    modifiers : Modifiers,
+    vc : UInt16, # virtual console
+    dx : Int16,  # displacement x
+    dy : Int16,  # displacement y for this event, and absolute x,y
+    x : Int16,   # absolute x
+    y : Int16,   # absolute y
     types : Types,
     clicks : Int32, # number of clicks, e.g. double click are determined by time-based processing
     margins : Margins,
