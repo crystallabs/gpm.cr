@@ -99,11 +99,27 @@ class GPM
     pid : Int32 = Process.pid.to_i32,
     # TODO: for vc: should also check for /dev/input/ (if tty not found? And anyway, how?)
     #
-    # `rescue nil` makes the `|| 0` fallback reachable: `File.readlink` raises
-    # whenever stdin isn't backed by a `/proc` tty entry (redirected/piped stdin,
-    # service manager, non-Linux), and `record` evaluates this default eagerly on
-    # every `Config.new` even when `vc:` is passed explicitly.
-    vc : Int32 = (File.readlink("/proc/#{Process.pid}/fd/0").match(/tty(\d+)/).try(&.[1].to_i) rescue nil) || 0
+    # Note that `record` evaluates this default eagerly on every `Config.new`,
+    # even when `vc:` is passed explicitly, so `current_vc` must never raise.
+    vc : Int32 = Config.current_vc
+
+  struct Config
+    # Number of the virtual console the process is running on, or 0 if it
+    # can't be determined (stdio redirected, running under X/ssh, non-Linux).
+    #
+    # Mirrors libgpm's `Gpm_Open`: the first of stdin/stdout/stderr that is a
+    # tty decides, and both `/dev/ttyN` and `/dev/vc/N` names are recognized.
+    # The link is resolved through `/proc` because Crystal has no `ttyname`.
+    def self.current_vc : Int32
+      {0, 1, 2}.each do |fileno|
+        name = File.readlink("/proc/self/fd/#{fileno}") rescue next
+        if vc = name.match(%r{^/dev/(?:tty|vc/)(\d+)$}).try(&.[1].to_i)
+          return vc
+        end
+      end
+      0
+    end
+  end
 
   record Event,
     buttons : Buttons,
